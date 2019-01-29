@@ -35,9 +35,14 @@ class AlphaBetaAgent(agent.Agent):
         if self.player == 1 and self.has_not_moved is True:
             return math.floor(brd.w/2)
         self.has_not_moved = False
-        best_value = 0
         best_value = self.minimax(brd, 3, 1, True, -math.inf, math.inf)
         col_is = self.col
+        for successor, col in self.get_successors(brd):
+            if col == self.col:
+                value = self.check_lines(successor)
+                if value < -5000:
+                    self.minimax(brd, 3, self.max_depth-2, True, -math.inf, math.inf)
+
         return self.col
 
 
@@ -49,8 +54,6 @@ class AlphaBetaAgent(agent.Agent):
 
         blocked_one_side_edge = False
         disjoint = False
-        player_1_streaks = []
-        player_2_streaks = []
         player1_value = 0
         player2_value = 0
         player1_streak = 0
@@ -73,14 +76,14 @@ class AlphaBetaAgent(agent.Agent):
                                 if not blocked_one_side_edge or disjoint:
                                     disjoint = False
                                     if player2_streak == brd.n - 1:
-                                        player2_value += 1000000
+                                        player2_value += 10000
                                     player2_value += player2_streak * 1.5 * 100
-                                    player_2_streaks.append(player2_streak)
                                     player2_streak = 0
                                     blocked_one_side_edge = True
                             else:
                                 player1_streak += 1
 
+                            player1_streak += 1
 
                         if brd.board[x_index][y_index] == 2:
 
@@ -88,45 +91,41 @@ class AlphaBetaAgent(agent.Agent):
                                 if not blocked_one_side_edge or disjoint:
                                     disjoint = False
                                     if player1_streak == brd.n - 1:
-                                        player1_value += 1000000
+                                        player1_value += 10000
                                     player1_value += player1_streak * 1.5 * 100
-                                    player_1_streaks.append(player1_streak)
-                                    player1_streak
                                     player1_streak = 0
                                     blocked_one_side_edge = True
                             else:
                                 player2_streak += 1
 
+                            player2_streak += 1
 
-                    if (player1_streak or player2_streak) and (x_index == brd.h or y_index == brd.w) and disjoint:
+
+                    if (player1_streak or player2_streak) and ((x_index == brd.h and dx != 0) or (y_index == brd.w and dy != 0)) and disjoint:
 
                         if player2_streak:
-                            player_2_streaks.append(player2_streak)
                             if player2_streak == brd.n - 1:
-                                player2_value += 10000000
+                                player2_value += 15000
                             player2_value += player2_streak * 5 * 100
                             player2_streak = 0
 
                         if player1_streak:
-                            player_1_streaks.append(player1_streak)
                             if player1_streak == brd.n - 1:
-                                player1_value += 10000000
+                                player1_value += 15000
                             player1_value += player1_streak * 5 * 100
                             player1_streak = 0
 
-                    elif (player1_streak or player2_streak) and (x_index == brd.h or y_index == brd.w):
+                    elif (player1_streak or player2_streak) and ((x_index == brd.h and dx != 0) or (y_index == brd.w and dy != 0)):
+
                         if player2_streak and not blocked_one_side_edge:
                             if player2_streak == brd.n - 1:
-                                player2_value += 10000000
+                                player2_value += 15000
                             player2_value += player2_streak * 1.5 * 100
-                            player_2_streaks.append(player2_streak)
                             player2_streak = 0
 
-
                         elif player1_streak and not blocked_one_side_edge:
-                            player_1_streaks.append(player1_streak)
                             if player1_streak == brd.n - 1:
-                                player1_value += 10000000
+                                player1_value += 15000
                             player1_value += player1_streak * 1.5 * 100
                             player1_streak = 0
 
@@ -134,12 +133,12 @@ class AlphaBetaAgent(agent.Agent):
                         if player1_streak:
                             player1_value += player1_streak * 10 * 100
                             if player1_streak == brd.n - 2:
-                                player1_value += 100000000
+                                player1_value += 10000
 
                         else:
                             player2_value += player2_streak * 10 * 100
                             if player2_streak == brd.n - 2:
-                                player2_value += 100000000
+                                player2_value += 10000
 
                     elif player2_streak or player1_streak:
                         disjoint = True
@@ -148,13 +147,18 @@ class AlphaBetaAgent(agent.Agent):
                         blocked_one_side_edge = False
 
         if self.player == 1:
-            if player2_value > 1000000:
-                return -999999999999
+            if player2_value > 10000:
+                return -9999999
+            if player1_value > 10000:
+                return 9999999
             return player1_value - player2_value
         else:
-            if player1_value > 1000000:
-                return -999999999999
+            if player1_value > 10000:
+                return -9999999
+            if player2_value > 10000:
+                return 9999999
             return player2_value - player1_value
+
 
     def check_lines(self, brd):
         """Return True if a line of identical symbols exists starting at (x,y)
@@ -165,8 +169,6 @@ class AlphaBetaAgent(agent.Agent):
         for column in range(0, brd.w):
             value += self.board_line_values(brd, 0, column, 0, 1)  # Vertical
 
-        rowis = brd.h
-        colis = brd.w
         for r in range(0, brd.h):
             for c in range(0, brd.w):
                 if r == 0 or c == 0:
